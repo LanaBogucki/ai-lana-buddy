@@ -1,0 +1,45 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Dev: Start Next.js",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "nextjs",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".+",
+          "endsPattern": "^\\s*ready - started server"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": false
+      },
+      "detail": "Run the Next.js dev server on port 3000"
+    },
+    {
+      "label": "Dev: Stop Next.js",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "PIDS=\$(lsof -ti :3000); if [ -n \"$PIDS\" ]; then kill $PIDS; echo 'Stopped Next.js dev server on port 3000.'; else echo 'No Next.js dev server found on port 3000.'; fi"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
