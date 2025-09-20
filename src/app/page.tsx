@@ -37,7 +37,11 @@ export default function AILanaBuddyLanding() {
     });
 
   const analyzeImageMetrics = async (dataUrl: string) => {
-    const img = new Image();
+    if (typeof document === "undefined") {
+      throw new Error("Image analysis requires a browser environment");
+    }
+
+    const img = document.createElement("img");
     img.crossOrigin = "anonymous";
     img.src = dataUrl;
 
