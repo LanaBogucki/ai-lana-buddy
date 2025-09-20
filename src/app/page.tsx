@@ -374,9 +374,9 @@ export default function AILanaBuddyLanding() {
 
       const html2canvas = html2canvasModule.default ?? html2canvasModule;
 
-      iframe = document.createElement("iframe");
-      iframe.setAttribute("aria-hidden", "true");
-      Object.assign(iframe.style, {
+      const tempIframe = document.createElement("iframe");
+      tempIframe.setAttribute("aria-hidden", "true");
+      Object.assign(tempIframe.style, {
         position: "fixed",
         left: "-9999px",
         top: "0",
@@ -386,15 +386,16 @@ export default function AILanaBuddyLanding() {
         pointerEvents: "none",
       });
 
-      document.body.appendChild(iframe);
+      document.body.appendChild(tempIframe);
+      iframe = tempIframe;
 
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      const iframeDoc = tempIframe.contentDocument || tempIframe.contentWindow?.document;
       if (!iframeDoc) {
         throw new Error("Unable to access temporary report document");
       }
 
       await new Promise<void>((resolve) => {
-        iframe.addEventListener("load", () => resolve(), { once: true });
+        tempIframe.addEventListener("load", () => resolve(), { once: true });
         iframeDoc.open();
         iframeDoc.write(buildSampleReportHtml());
         iframeDoc.close();
