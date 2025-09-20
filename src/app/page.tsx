@@ -193,7 +193,7 @@ export default function AILanaBuddyLanding() {
       await new Promise<void>((resolve) => {
         tempIframe.addEventListener("load", () => resolve(), { once: true });
         iframeDoc.open();
-        iframeDoc.write(buildSampleReportHtml());
+        iframeDoc.write(buildSampleReportHtml({ score, analysis }));
         iframeDoc.close();
       });
 

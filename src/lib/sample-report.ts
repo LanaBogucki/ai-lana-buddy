@@ -64,7 +64,40 @@ export const SAMPLE_BADGES = [
   "Local product matches",
 ];
 
-export const buildSampleReportHtml = () => {
+type BuildReportOptions = {
+  score?: number | null;
+  analysis?: string | null;
+};
+
+const escapeHtml = (input: string) =>
+  input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const deriveScoreLabel = (score: number) => {
+  if (score >= 80) return "Radiant baseline";
+  if (score >= 55) return "Glow in progress";
+  if (score >= 40) return "Needs barrier boost";
+  return "Gentle care recommended";
+};
+
+export const buildSampleReportHtml = (options: BuildReportOptions = {}) => {
+  const hasCustomScore = typeof options.score === "number" && Number.isFinite(options.score);
+
+  const safeScore = hasCustomScore
+    ? Math.max(0, Math.min(100, Math.round(options.score!)))
+    : SAMPLE_SCORE_DETAILS.value;
+
+  const scoreLabel = hasCustomScore ? deriveScoreLabel(safeScore) : SAMPLE_SCORE_DETAILS.label;
+  const fallbackDescription = escapeHtml(SAMPLE_SCORE_DETAILS.description);
+
+  const scoreDescription = options.analysis?.trim()
+    ? escapeHtml(options.analysis.trim())
+    : fallbackDescription;
+
   const metricsHtml = SAMPLE_METRICS.map(
     (metric) => `
       <div class="metric">
@@ -174,11 +207,11 @@ export const buildSampleReportHtml = () => {
             <div>
               <p class="label">AI Glow Score</p>
               <div class="score-row">
-                <p class="score-value">${SAMPLE_SCORE_DETAILS.value}</p>
-                <span class="score-tag">${SAMPLE_SCORE_DETAILS.label}</span>
+                <p class="score-value">${safeScore}</p>
+                <span class="score-tag">${scoreLabel}</span>
               </div>
-              <div class="progress"><span style="width:${SAMPLE_SCORE_DETAILS.value}%"></span></div>
-              <p class="score-text">${SAMPLE_SCORE_DETAILS.description}</p>
+              <div class="progress"><span style="width:${safeScore}%"></span></div>
+              <p class="score-text">${scoreDescription}</p>
               <div class="badges">${badgesHtml}</div>
             </div>
             <div class="hero">
