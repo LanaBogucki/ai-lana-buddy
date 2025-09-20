@@ -23,27 +23,162 @@ export default function AILanaBuddyLanding() {
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  const handleFile = (f: File | null) => {
+  const currentToken = useRef<string | null>(null);
+
+  const clamp = (value: number, min: number, max: number) =>
+    Math.min(max, Math.max(min, value));
+
+  const readFileAsDataURL = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error ?? new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+
+  const analyzeImageMetrics = async (dataUrl: string) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = dataUrl;
+
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error("Could not analyze image"));
+    });
+
+    const size = 64;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      throw new Error("Canvas unavailable");
+    }
+
+    ctx.drawImage(img, 0, 0, size, size);
+    const { data } = ctx.getImageData(0, 0, size, size);
+
+    let total = 0;
+    let meanBrightness = 0;
+    let meanSaturation = 0;
+    let highlightCount = 0;
+    let shadowCount = 0;
+    let sumSquares = 0;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i] / 255;
+      const g = data[i + 1] / 255;
+      const b = data[i + 2] / 255;
+
+      // HSL lightness proxy using perceptual luminance weights
+      const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const saturation = max === 0 ? 0 : (max - min) / max;
+
+      meanBrightness += brightness;
+      meanSaturation += saturation;
+      sumSquares += brightness * brightness;
+      highlightCount += brightness > 0.75 ? 1 : 0;
+      shadowCount += brightness < 0.25 ? 1 : 0;
+      total += 1;
+    }
+
+    if (!total) {
+      throw new Error("Empty image data");
+    }
+
+    meanBrightness /= total;
+    meanSaturation /= total;
+    const variance = clamp(sumSquares / total - meanBrightness * meanBrightness, 0, 1);
+    const stdDeviation = Math.sqrt(variance);
+
+    return {
+      brightness: meanBrightness,
+      saturation: meanSaturation,
+      highlightRatio: highlightCount / total,
+      shadowRatio: shadowCount / total,
+      stdDeviation,
+    };
+  };
+
+  const computeGlowScore = (metrics: Awaited<ReturnType<typeof analyzeImageMetrics>>) => {
+    const { brightness, stdDeviation, highlightRatio, shadowRatio, saturation } = metrics;
+
+    const targetBrightness = 0.62;
+    const brightnessScore = 1 - clamp(Math.abs(brightness - targetBrightness) / targetBrightness, 0, 1);
+
+    const targetTexture = 0.18;
+    const textureScore = 1 - clamp(Math.abs(stdDeviation - targetTexture) / targetTexture, 0, 1);
+
+    const desiredHighlights = 0.08;
+    const highlightScore = 1 - clamp(Math.abs(highlightRatio - desiredHighlights) / desiredHighlights, 0, 1);
+
+    const shadowPenalty = clamp(shadowRatio / 0.2, 0, 1);
+
+    const saturationTarget = 0.28;
+    const saturationScore = 1 - clamp(Math.abs(saturation - saturationTarget) / saturationTarget, 0, 1);
+
+    const combined =
+      brightnessScore * 0.4 +
+      textureScore * 0.25 +
+      highlightScore * 0.15 +
+      saturationScore * 0.15 -
+      shadowPenalty * 0.1;
+
+    return Math.round(clamp(combined * 100, 5, 98));
+  };
+
+  const deriveAnalysis = (
+    scoreValue: number,
+    metrics: Awaited<ReturnType<typeof analyzeImageMetrics>>
+  ) => {
+    if (scoreValue >= 80) {
+      return "Balanced hydration and even tone detected. Consider light moisturizer + daily SPF.";
+    }
+
+    if (scoreValue >= 55) {
+      return "Minor texture or uneven tone detected. Try gentle exfoliant twice weekly + barrier-friendly moisturizer.";
+    }
+
+    if (metrics.shadowRatio > 0.25) {
+      return "Low-light image detected. Retake in brighter, natural light for a clearer preview.";
+    }
+
+    return "Dryness/signs of sensitivity detected. Start simple: cleanser + rich moisturizer + SPF.";
+  };
+
+  const handleFile = async (f: File | null) => {
     if (!f) return;
-    const url = URL.createObjectURL(f);
-    setPreview(url);
-    // Mock analysis
+    const token = `${Date.now()}-${f.name}-${f.size}`;
+    currentToken.current = token;
+
     setLoading(true);
     setScore(null);
     setAnalysis(null);
-    setTimeout(() => {
-      // Simple deterministic mock score based on file size (replace with real model)
-      const mock = Math.min(100, Math.max(0, Math.round((f.size % 100000) / 1000)));
-      setScore(mock);
-      setAnalysis(
-        mock > 70
-          ? "Balanced hydration and even tone detected. Consider light moisturizer + daily SPF."
-          : mock > 40
-          ? "Minor texture/uneven tone detected. Try gentle exfoliant 2×/week + barrier-friendly moisturizer."
-          : "Dryness/signs of sensitivity detected. Start simple: cleanser + rich moisturizer + SPF."
-      );
-      setLoading(false);
-    }, 1200);
+
+    try {
+      const dataUrl = await readFileAsDataURL(f);
+      if (currentToken.current !== token) return;
+
+      setPreview(dataUrl);
+
+      const metrics = await analyzeImageMetrics(dataUrl);
+      if (currentToken.current !== token) return;
+
+      const mockScore = computeGlowScore(metrics);
+      setScore(mockScore);
+      setAnalysis(deriveAnalysis(mockScore, metrics));
+    } catch (error) {
+      console.error(error);
+      if (currentToken.current === token) {
+        setAnalysis("We couldn't read that photo. Try a clearer image with good lighting.");
+      }
+    } finally {
+      if (currentToken.current === token) {
+        setLoading(false);
+      }
+    }
   };
 
   const heroGradient = "bg-gradient-to-b from-rose-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900";
