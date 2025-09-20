@@ -10,6 +10,59 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Check, Globe2, Heart, Lock, Sparkles, Star, Timer, Wand2 } from "lucide-react";
 
+const SAMPLE_REPORT_METADATA = {
+  generatedOn: "April 12, 2025",
+  clientName: "Lana B.",
+  email: "demo@ailanabuddy.app",
+};
+
+const SAMPLE_METRICS = [
+  {
+    label: "Hydration balance",
+    value: 84,
+    description: "Moisture barrier looks supported; keep lightweight humectants in rotation.",
+  },
+  {
+    label: "Texture smoothness",
+    value: 78,
+    description: "Minor dry patches along cheeks. Pair chemical exfoliant with barrier repair.",
+  },
+  {
+    label: "Tone evenness",
+    value: 74,
+    description: "Subtle hyperpigmentation around jawline. Target with vitamin C + SPF diligence.",
+  },
+];
+
+const SAMPLE_ROUTINE = [
+  {
+    step: "Cleanser",
+    summary: "Amino-gel cleanser for sensitive skin",
+    note: "AM & PM · Massage 60 seconds, lukewarm rinse",
+  },
+  {
+    step: "Target",
+    summary: "5% niacinamide + panthenol serum",
+    note: "AM · Calm redness and support moisture barrier",
+  },
+  {
+    step: "Moisturizer",
+    summary: "Barrier-repair cream with ceramides",
+    note: "AM & PM · Press onto damp skin for better absorption",
+  },
+  {
+    step: "SPF",
+    summary: "Mineral SPF 30 with zinc + tint",
+    note: "AM · Shake well, apply two fingers for full coverage",
+  },
+];
+
+const SAMPLE_TIPS = [
+  "Opt for soft microfiber towel pats instead of rubbing to minimize irritation.",
+  "Layer humectants (mist + serum) beneath moisturizer when flying or in dry climates.",
+  "Schedule a routine check-in every 6 weeks to adjust actives with seasonal shifts.",
+];
+
 // Single-file React landing page for AI Lana Buddy
 // TailwindCSS required. Uses shadcn/ui components.
 // Notes:
@@ -22,6 +75,9 @@ export default function AILanaBuddyLanding() {
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const reportRef = useRef<HTMLDivElement | null>(null);
+  const [reportGenerating, setReportGenerating] = useState(false);
+  const [reportMessage, setReportMessage] = useState<string | null>(null);
 
   const currentToken = useRef<string | null>(null);
 
@@ -150,6 +206,53 @@ export default function AILanaBuddyLanding() {
     }
 
     return "Dryness/signs of sensitivity detected. Start simple: cleanser + rich moisturizer + SPF.";
+  };
+
+  const generateSampleReport = async () => {
+    if (reportGenerating) return;
+
+    setReportMessage(null);
+    setReportGenerating(true);
+
+    try {
+      const element = reportRef.current;
+      if (!element) {
+        throw new Error("Sample report template missing");
+      }
+
+      const html2canvasModule = await import("html2canvas");
+      const { jsPDF } = await import("jspdf");
+
+      const html2canvas = html2canvasModule.default ?? html2canvasModule;
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#FFFFFF",
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png", 1.0);
+      const width = canvas.width;
+      const height = canvas.height;
+
+      const orientation = height >= width ? "portrait" : "landscape";
+      const pdf = new jsPDF({
+        orientation,
+        unit: "px",
+        format: [width, height],
+      });
+
+      pdf.addImage(imgData, "PNG", 0, 0, width, height);
+      pdf.save("ai-lana-buddy-sample-report.pdf");
+
+      setReportMessage("Sample report downloaded");
+    } catch (error) {
+      console.error(error);
+      setReportMessage("We couldn't generate the sample PDF. Please try again.");
+    } finally {
+      setReportGenerating(false);
+    }
   };
 
   const handleFile = async (f: File | null) => {
@@ -316,7 +419,7 @@ export default function AILanaBuddyLanding() {
                     </div>
                     <p className="mt-3 text-sm text-slate-600 dark:text-slate-300 min-h-[3rem]">
                       {loading
-                        ? "Analyzing…"
+                        ? "Analyzing..."
                         : analysis ??
                           "Your private, on-device preview. Real app provides dermatologist-reviewed guidance without medical claims."}
                     </p>
@@ -337,10 +440,18 @@ export default function AILanaBuddyLanding() {
               <Button className="rounded-2xl" onClick={() => fileRef.current?.click()}>
                 Upload another
               </Button>
-              <Button variant="outline" className="rounded-2xl">
-                See sample report
+              <Button
+                variant="outline"
+                className="rounded-2xl"
+                onClick={generateSampleReport}
+                disabled={reportGenerating}
+              >
+                {reportGenerating ? "Generating..." : "See sample report"}
               </Button>
             </CardFooter>
+            {reportMessage && (
+              <p className="px-6 pb-6 text-sm text-slate-500">{reportMessage}</p>
+            )}
           </Card>
         </div>
       </section>
@@ -563,10 +674,132 @@ export default function AILanaBuddyLanding() {
             </ul>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 text-xs text-slate-500">
-          © {new Date().getFullYear()} AI Lana Buddy. Educational guidance only; not medical advice.
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 text-xs text-slate-500">
+        © {new Date().getFullYear()} AI Lana Buddy. Educational guidance only; not medical advice.
+      </div>
       </footer>
+
+      {/* Hidden sample report template used for PDF export */}
+      <div
+        ref={reportRef}
+        aria-hidden="true"
+        className="pointer-events-none fixed -left-[9999px] top-0 w-[816px] select-none"
+      >
+        <div className="rounded-[32px] border border-slate-200 bg-white shadow-2xl overflow-hidden">
+          <div className="bg-gradient-to-br from-rose-100 via-white to-sky-100 px-12 py-10 border-b border-slate-200">
+            <div className="flex items-start justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-3xl bg-gradient-to-tr from-fuchsia-500 to-amber-400" />
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">AI Lana Buddy</p>
+                  <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">Glow Insights Preview</h1>
+                </div>
+              </div>
+              <div className="text-right text-sm text-slate-600">
+                <p className="font-semibold">{SAMPLE_REPORT_METADATA.clientName}</p>
+                <p>{SAMPLE_REPORT_METADATA.email}</p>
+                <p className="text-xs text-slate-500 mt-2">Generated {SAMPLE_REPORT_METADATA.generatedOn}</p>
+              </div>
+            </div>
+
+            <div className="mt-10 grid grid-cols-[1.1fr_0.9fr] gap-10 items-center">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">AI Glow Score</p>
+                <div className="mt-3 flex items-end gap-4">
+                  <p className="text-6xl font-black text-slate-900">82</p>
+                  <span className="text-sm font-semibold text-emerald-600">Radiant baseline</span>
+                </div>
+                <div className="mt-4">
+                  <Progress value={82} className="h-4 rounded-full" />
+                  <p className="mt-4 text-base text-slate-600 max-w-xl">
+                    Balanced hydration, calm barrier, and even tone overall. Keep consistent moisturizing, add targeted actives only where needed, and maintain SPF diligence for sustained glow.
+                  </p>
+                </div>
+                <div className="mt-6 flex flex-wrap gap-3 text-sm">
+                  <Badge variant="secondary" className="rounded-xl">
+                    <Timer className="w-3.5 h-3.5 mr-1" /> 5s mock analysis
+                  </Badge>
+                  <Badge variant="secondary" className="rounded-xl">
+                    <Heart className="w-3.5 h-3.5 mr-1" /> Dermatologist reviewed playbook
+                  </Badge>
+                  <Badge variant="secondary" className="rounded-xl">
+                    <Globe2 className="w-3.5 h-3.5 mr-1" /> Local product matches
+                  </Badge>
+                </div>
+              </div>
+              <div className="relative h-64 rounded-[28px] border border-slate-200/70 bg-gradient-to-br from-slate-200 via-white to-rose-100 overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(244,114,182,0.35),_transparent_55%)]" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-slate-700 px-10">
+                  <p className="text-sm font-semibold tracking-[0.4em] uppercase">Demo visual</p>
+                  <p className="mt-4 text-xl font-semibold">Reusable component library mirrors live app UI</p>
+                  <p className="mt-3 text-sm text-slate-500">
+                    Replace this block with captured selfie preview once the production model is connected.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-12 py-10 space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {SAMPLE_METRICS.map((metric) => (
+                <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white/70 p-6 shadow-sm backdrop-blur">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{metric.label}</p>
+                  <div className="mt-3 flex items-baseline gap-3">
+                    <span className="text-4xl font-bold text-slate-900">{metric.value}</span>
+                    <span className="text-sm text-slate-500">/100</span>
+                  </div>
+                  <Progress value={metric.value} className="mt-3 h-3" />
+                  <p className="mt-4 text-sm text-slate-600 leading-relaxed">{metric.description}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">Daily routine snapshot</h2>
+                  <p className="text-sm text-slate-500">Personalized picks from local retailers within budget band B.</p>
+                </div>
+                <Badge variant="outline" className="rounded-xl">
+                  <Sparkles className="w-3.5 h-3.5 mr-1" /> Hypoallergenic focus
+                </Badge>
+              </div>
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                {SAMPLE_ROUTINE.map((item) => (
+                  <div key={item.step} className="rounded-2xl border border-slate-200 p-6">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{item.step}</p>
+                    <p className="mt-3 text-lg font-semibold text-slate-900">{item.summary}</p>
+                    <p className="mt-2 text-sm text-slate-500">{item.note}</p>
+                    <div className="mt-4 flex items-center gap-2 text-sm text-emerald-600">
+                      <Check className="w-4 h-4" /> Clinically-vetted ingredient list
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 text-slate-100">
+              <h3 className="text-xl font-semibold">Gentle guidance & next steps</h3>
+              <p className="mt-2 text-sm text-slate-300">Stay consistent for 4-6 weeks, then retest for adaptive adjustments backed by Lana&apos;s inclusive model.</p>
+              <ul className="mt-5 space-y-3 text-sm">
+                {SAMPLE_TIPS.map((tip) => (
+                  <li key={tip} className="flex items-start gap-3">
+                    <Check className="w-4 h-4 mt-1 flex-shrink-0 text-emerald-400" />
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="px-12 py-6 border-t border-slate-200 bg-slate-50 text-xs text-slate-500 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <p>Mock insights for demo purposes only. Dermatologist-reviewed feedback becomes available in the full release.</p>
+            <p className="font-medium text-slate-600">AI Lana Buddy · Inclusive by design · v0.3 preview</p>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
