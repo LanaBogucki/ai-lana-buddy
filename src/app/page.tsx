@@ -16,6 +16,13 @@ const SAMPLE_REPORT_METADATA = {
   email: "demo@ailanabuddy.app",
 };
 
+const SAMPLE_SCORE_DETAILS = {
+  value: 82,
+  label: "Radiant baseline",
+  description:
+    "Balanced hydration, calm barrier, and even tone overall. Keep consistent moisturizing, add targeted actives only where needed, and maintain SPF diligence for sustained glow.",
+};
+
 const SAMPLE_METRICS = [
   {
     label: "Hydration balance",
@@ -63,6 +70,152 @@ const SAMPLE_TIPS = [
   "Schedule a routine check-in every 6 weeks to adjust actives with seasonal shifts.",
 ];
 
+const buildSampleReportHtml = () => {
+  const metricsHtml = SAMPLE_METRICS.map(
+    (metric) => `
+      <div class="metric">
+        <p class="label">${metric.label}</p>
+        <div class="value"><span>${metric.value}</span><small>/100</small></div>
+        <div class="bar"><span style="width:${metric.value}%"></span></div>
+        <p class="body">${metric.description}</p>
+      </div>
+    `
+  ).join("");
+
+  const routineHtml = SAMPLE_ROUTINE.map(
+    (item) => `
+      <div class="routine-card">
+        <p class="step">${item.step}</p>
+        <h4>${item.summary}</h4>
+        <p class="body">${item.note}</p>
+        <div class="note">✔ Clinically-vetted ingredient list</div>
+      </div>
+    `
+  ).join("");
+
+  const tipsHtml = SAMPLE_TIPS.map((tip) => `<li>${tip}</li>`).join("");
+
+  const badgesHtml = SAMPLE_BADGES.map(
+    (badge) => `<span class="badge"><span class="badge-icon"></span>${badge}</span>`
+  ).join("");
+
+  return `<!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <style>
+        :root { color-scheme: light; }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; background: #f8fafc; color: #1f2937; font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; }
+        .card { width: 816px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 32px; box-shadow: 0 24px 60px rgba(15,23,42,0.12); overflow: hidden; }
+        .header { padding: 48px 56px 40px; background: linear-gradient(135deg,#ffe4e6 5%,#ffffff 45%,#e0f2fe 100%); border-bottom: 1px solid #e2e8f0; }
+        .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+        .brand { display: flex; align-items: center; gap: 18px; }
+        .brand-badge { width: 48px; height: 48px; border-radius: 24px; background: linear-gradient(135deg,#d946ef 0%,#fbbf24 100%); }
+        .eyebrow { margin: 0; font-size: 12px; letter-spacing: 0.3em; font-weight: 600; text-transform: uppercase; color: #64748b; }
+        .title { margin: 8px 0 0; font-size: 32px; font-weight: 800; color: #0f172a; }
+        .meta { text-align: right; font-size: 14px; color: #475569; }
+        .meta p { margin: 0; }
+        .meta .name { font-weight: 600; color: #0f172a; }
+        .meta .generated { margin-top: 8px; font-size: 12px; color: #64748b; }
+        .score-grid { margin-top: 40px; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; align-items: center; }
+        .label { margin: 0; font-size: 12px; letter-spacing: 0.3em; font-weight: 600; text-transform: uppercase; color: #64748b; }
+        .score-row { display: flex; align-items: flex-end; gap: 16px; margin-top: 12px; }
+        .score-value { margin: 0; font-size: 60px; font-weight: 900; color: #0f172a; }
+        .score-tag { font-size: 14px; font-weight: 600; color: #34d399; }
+        .progress { margin-top: 20px; height: 16px; width: 100%; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+        .progress span { display: block; height: 100%; background: #0f172a; border-radius: 999px; }
+        .score-text { margin-top: 16px; font-size: 16px; line-height: 24px; color: #475569; max-width: 480px; }
+        .badges { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 12px; }
+        .badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 500; background: #f3f4f6; border: 1px solid #e2e8f0; color: #111827; }
+        .badge-icon { width: 8px; height: 8px; border-radius: 50%; background: #111827; display: inline-block; }
+        .hero { position: relative; height: 256px; border-radius: 28px; border: 1px solid #e2e8f0; background: linear-gradient(135deg,#e2e8f0 0%,#ffffff 55%,#ffe4e6 100%); overflow: hidden; }
+        .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at top left, rgba(244,114,182,0.35) 0%, rgba(244,114,182,0) 55%); }
+        .hero-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 40px; color: #475569; }
+        .hero-content h3 { margin: 16px 0 0; font-size: 22px; font-weight: 600; color: #0f172a; }
+        .hero-content p { margin: 12px 0 0; font-size: 14px; color: #64748b; }
+        .section { padding: 48px 56px; background: #ffffff; }
+        .metrics { display: grid; gap: 24px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .metric { border: 1px solid #e2e8f0; border-radius: 20px; padding: 24px; background: #ffffff; box-shadow: 0 6px 18px rgba(15,23,42,0.04); }
+        .metric .value { display: flex; align-items: baseline; gap: 12px; margin-top: 12px; }
+        .metric .value span { font-size: 34px; font-weight: 700; color: #0f172a; }
+        .metric .value small { font-size: 14px; color: #64748b; }
+        .metric .bar { margin-top: 16px; height: 12px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+        .metric .bar span { display: block; height: 100%; background: #0f172a; border-radius: 999px; }
+        .metric .body { margin-top: 16px; font-size: 14px; line-height: 22px; color: #475569; }
+        .routine { margin-top: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+        .routine-card { border: 1px solid #e2e8f0; border-radius: 20px; padding: 24px; background: #f8fafc; }
+        .routine-card .step { font-size: 12px; letter-spacing: 0.3em; font-weight: 600; text-transform: uppercase; color: #64748b; margin: 0; }
+        .routine-card h4 { margin: 14px 0 0; font-size: 18px; font-weight: 600; color: #0f172a; }
+        .routine-card .body { margin: 12px 0 0; font-size: 14px; color: #475569; }
+        .routine-card .note { margin-top: 16px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #34d399; font-weight: 500; }
+        .tips { margin-top: 40px; border: 1px solid #e2e8f0; border-radius: 24px; padding: 32px; background: linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%); color: #f8fafc; }
+        .tips h3 { margin: 0; font-size: 22px; font-weight: 600; }
+        .tips p { margin: 12px 0 24px; font-size: 14px; color: rgba(241,245,249,0.8); }
+        .tips ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 14px; }
+        .tips li { display: flex; gap: 12px; }
+        .tips li::before { content: '✔'; font-size: 14px; color: #34d399; margin-top: 2px; }
+        .footer { padding: 24px 56px; border-top: 1px solid #e2e8f0; background: #f8fafc; font-size: 12px; color: #64748b; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="header">
+          <div class="row">
+            <div class="brand">
+              <div class="brand-badge"></div>
+              <div>
+                <p class="eyebrow">AI Lana Buddy</p>
+                <h1 class="title">Glow Insights Preview</h1>
+              </div>
+            </div>
+            <div class="meta">
+              <p class="name">${SAMPLE_REPORT_METADATA.clientName}</p>
+              <p>${SAMPLE_REPORT_METADATA.email}</p>
+              <p class="generated">Generated ${SAMPLE_REPORT_METADATA.generatedOn}</p>
+            </div>
+          </div>
+          <div class="score-grid">
+            <div>
+              <p class="label">AI Glow Score</p>
+              <div class="score-row">
+                <p class="score-value">${SAMPLE_SCORE_DETAILS.value}</p>
+                <span class="score-tag">${SAMPLE_SCORE_DETAILS.label}</span>
+              </div>
+              <div class="progress"><span style="width:${SAMPLE_SCORE_DETAILS.value}%"></span></div>
+              <p class="score-text">${SAMPLE_SCORE_DETAILS.description}</p>
+              <div class="badges">${badgesHtml}</div>
+            </div>
+            <div class="hero">
+              <div class="hero-content">
+                <p class="label" style="color:#64748b;">Demo visual</p>
+                <h3>Reusable component library mirrors live app UI</h3>
+                <p>Replace this block with captured selfie preview once the production model is connected.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="metrics">${metricsHtml}</div>
+          <div class="routine">${routineHtml}</div>
+          <div class="tips">
+            <h3>Gentle guidance & next steps</h3>
+            <p>Stay consistent for 4-6 weeks, then retest for adaptive adjustments backed by Lana's inclusive model.</p>
+            <ul>${tipsHtml}</ul>
+          </div>
+        </div>
+        <div class="footer">
+          <span>Mock insights for demo purposes only. Dermatologist-reviewed feedback becomes available in the full release.</span>
+          <span>AI Lana Buddy · Inclusive by design · v0.3 preview</span>
+        </div>
+      </div>
+    </body>
+  </html>`;
+};
+
+const SAMPLE_BADGES = ["5s mock analysis", "Dermatologist reviewed playbook", "Local product matches"];
+
 // Single-file React landing page for AI Lana Buddy
 // TailwindCSS required. Uses shadcn/ui components.
 // Notes:
@@ -75,7 +228,6 @@ export default function AILanaBuddyLanding() {
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const reportRef = useRef<HTMLDivElement | null>(null);
   const [reportGenerating, setReportGenerating] = useState(false);
   const [reportMessage, setReportMessage] = useState<string | null>(null);
 
@@ -214,18 +366,46 @@ export default function AILanaBuddyLanding() {
     setReportMessage(null);
     setReportGenerating(true);
 
-    try {
-      const element = reportRef.current;
-      if (!element) {
-        throw new Error("Sample report template missing");
-      }
+    let iframe: HTMLIFrameElement | null = null;
 
+    try {
       const html2canvasModule = await import("html2canvas");
       const { jsPDF } = await import("jspdf");
 
       const html2canvas = html2canvasModule.default ?? html2canvasModule;
 
-      const canvas = await html2canvas(element, {
+      iframe = document.createElement("iframe");
+      iframe.setAttribute("aria-hidden", "true");
+      Object.assign(iframe.style, {
+        position: "fixed",
+        left: "-9999px",
+        top: "0",
+        width: "816px",
+        height: "10px",
+        opacity: "0",
+        pointerEvents: "none",
+      });
+
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        throw new Error("Unable to access temporary report document");
+      }
+
+      await new Promise<void>((resolve) => {
+        iframe.addEventListener("load", () => resolve(), { once: true });
+        iframeDoc.open();
+        iframeDoc.write(buildSampleReportHtml());
+        iframeDoc.close();
+      });
+
+      const target = iframeDoc.querySelector(".card") as HTMLElement | null;
+      if (!target) {
+        throw new Error("Sample report template missing");
+      }
+
+      const canvas = await html2canvas(target, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#FFFFFF",
@@ -251,6 +431,9 @@ export default function AILanaBuddyLanding() {
       console.error(error);
       setReportMessage("We couldn't generate the sample PDF. Please try again.");
     } finally {
+      if (iframe?.parentNode) {
+        iframe.parentNode.removeChild(iframe);
+      }
       setReportGenerating(false);
     }
   };
@@ -678,127 +861,6 @@ export default function AILanaBuddyLanding() {
         © {new Date().getFullYear()} AI Lana Buddy. Educational guidance only; not medical advice.
       </div>
       </footer>
-
-      {/* Hidden sample report template used for PDF export */}
-      <div
-        ref={reportRef}
-        aria-hidden="true"
-        className="pointer-events-none fixed -left-[9999px] top-0 w-[816px] select-none"
-      >
-        <div className="rounded-[32px] border border-slate-200 bg-white shadow-2xl overflow-hidden">
-          <div className="bg-gradient-to-br from-rose-100 via-white to-sky-100 px-12 py-10 border-b border-slate-200">
-            <div className="flex items-start justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-3xl bg-gradient-to-tr from-fuchsia-500 to-amber-400" />
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">AI Lana Buddy</p>
-                  <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">Glow Insights Preview</h1>
-                </div>
-              </div>
-              <div className="text-right text-sm text-slate-600">
-                <p className="font-semibold">{SAMPLE_REPORT_METADATA.clientName}</p>
-                <p>{SAMPLE_REPORT_METADATA.email}</p>
-                <p className="text-xs text-slate-500 mt-2">Generated {SAMPLE_REPORT_METADATA.generatedOn}</p>
-              </div>
-            </div>
-
-            <div className="mt-10 grid grid-cols-[1.1fr_0.9fr] gap-10 items-center">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">AI Glow Score</p>
-                <div className="mt-3 flex items-end gap-4">
-                  <p className="text-6xl font-black text-slate-900">82</p>
-                  <span className="text-sm font-semibold text-emerald-600">Radiant baseline</span>
-                </div>
-                <div className="mt-4">
-                  <Progress value={82} className="h-4 rounded-full" />
-                  <p className="mt-4 text-base text-slate-600 max-w-xl">
-                    Balanced hydration, calm barrier, and even tone overall. Keep consistent moisturizing, add targeted actives only where needed, and maintain SPF diligence for sustained glow.
-                  </p>
-                </div>
-                <div className="mt-6 flex flex-wrap gap-3 text-sm">
-                  <Badge variant="secondary" className="rounded-xl">
-                    <Timer className="w-3.5 h-3.5 mr-1" /> 5s mock analysis
-                  </Badge>
-                  <Badge variant="secondary" className="rounded-xl">
-                    <Heart className="w-3.5 h-3.5 mr-1" /> Dermatologist reviewed playbook
-                  </Badge>
-                  <Badge variant="secondary" className="rounded-xl">
-                    <Globe2 className="w-3.5 h-3.5 mr-1" /> Local product matches
-                  </Badge>
-                </div>
-              </div>
-              <div className="relative h-64 rounded-[28px] border border-slate-200/70 bg-gradient-to-br from-slate-200 via-white to-rose-100 overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(244,114,182,0.35),_transparent_55%)]" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-slate-700 px-10">
-                  <p className="text-sm font-semibold tracking-[0.4em] uppercase">Demo visual</p>
-                  <p className="mt-4 text-xl font-semibold">Reusable component library mirrors live app UI</p>
-                  <p className="mt-3 text-sm text-slate-500">
-                    Replace this block with captured selfie preview once the production model is connected.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="px-12 py-10 space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {SAMPLE_METRICS.map((metric) => (
-                <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white/70 p-6 shadow-sm backdrop-blur">
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{metric.label}</p>
-                  <div className="mt-3 flex items-baseline gap-3">
-                    <span className="text-4xl font-bold text-slate-900">{metric.value}</span>
-                    <span className="text-sm text-slate-500">/100</span>
-                  </div>
-                  <Progress value={metric.value} className="mt-3 h-3" />
-                  <p className="mt-4 text-sm text-slate-600 leading-relaxed">{metric.description}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900">Daily routine snapshot</h2>
-                  <p className="text-sm text-slate-500">Personalized picks from local retailers within budget band B.</p>
-                </div>
-                <Badge variant="outline" className="rounded-xl">
-                  <Sparkles className="w-3.5 h-3.5 mr-1" /> Hypoallergenic focus
-                </Badge>
-              </div>
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                {SAMPLE_ROUTINE.map((item) => (
-                  <div key={item.step} className="rounded-2xl border border-slate-200 p-6">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{item.step}</p>
-                    <p className="mt-3 text-lg font-semibold text-slate-900">{item.summary}</p>
-                    <p className="mt-2 text-sm text-slate-500">{item.note}</p>
-                    <div className="mt-4 flex items-center gap-2 text-sm text-emerald-600">
-                      <Check className="w-4 h-4" /> Clinically-vetted ingredient list
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 text-slate-100">
-              <h3 className="text-xl font-semibold">Gentle guidance & next steps</h3>
-              <p className="mt-2 text-sm text-slate-300">Stay consistent for 4-6 weeks, then retest for adaptive adjustments backed by Lana&apos;s inclusive model.</p>
-              <ul className="mt-5 space-y-3 text-sm">
-                {SAMPLE_TIPS.map((tip) => (
-                  <li key={tip} className="flex items-start gap-3">
-                    <Check className="w-4 h-4 mt-1 flex-shrink-0 text-emerald-400" />
-                    <span>{tip}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="px-12 py-6 border-t border-slate-200 bg-slate-50 text-xs text-slate-500 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <p>Mock insights for demo purposes only. Dermatologist-reviewed feedback becomes available in the full release.</p>
-            <p className="font-medium text-slate-600">AI Lana Buddy · Inclusive by design · v0.3 preview</p>
-          </div>
-        </div>
-      </div>
 
     </div>
   );
