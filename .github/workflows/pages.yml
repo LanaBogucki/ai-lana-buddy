@@ -38,10 +38,25 @@ jobs:
       - name: Build static site
         run: npm run build
 
+      - name: Resolve export directory
+        id: export_dir
+        shell: bash
+        run: |
+          base_path="${NEXT_PUBLIC_BASE_PATH#/}"
+          if [ -z "$base_path" ]; then
+            echo "path=out" >>"$GITHUB_OUTPUT"
+          else
+            if [ ! -d "out/$base_path" ]; then
+              echo "::error::Expected export directory out/$base_path but it was not found." >&2
+              exit 1
+            fi
+            echo "path=out/$base_path" >>"$GITHUB_OUTPUT"
+          fi
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./out
+          path: ./${{ steps.export_dir.outputs.path }}
 
   deploy:
     needs: build
